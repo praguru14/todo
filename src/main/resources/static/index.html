@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,127 +14,136 @@
         .todo-item {
             margin-bottom: 10px;
         }
+
+        .delete-btn {
+            margin-left: 8px;
+            /* Adjust as needed */
+        }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <h2 class="mt-4">Todo List</h2>
-    <!-- Todo List -->
-    <div class="input-group mb-3">
-        <input type="text" class="form-control" placeholder="Add new task" id="newTaskInput">
-        <button class="btn btn-primary" type="button" id="addTaskBtn">Add Task</button>
+    <div class="container">
+        <h2 class="mt-4">Todo List</h2>
+        <!-- Todo List -->
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Add new task" id="newTaskInput">
+            <button class="btn btn-primary" type="button" id="addTaskBtn">Add Task</button>
+        </div>
+        <ul class="list-group" id="todoList">
+            <!-- Todo items will be added dynamically here -->
+        </ul>
     </div>
-    <ul class="list-group" id="todoList">
-        <!-- Todo items will be added dynamically here -->
-    </ul>
-</div>
 
-<!-- Inline JavaScript -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Function to add a new todo task
-    function addTask(task) {
-    var listItem = document.createElement('li');
-    listItem.className = 'list-group-item todo-item';
+    <!-- Inline JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Set to keep track of displayed task IDs
+            var displayedTaskIds = new Set();
 
-    // Create span for task name
-    var taskNameSpan = document.createElement('span');
-    taskNameSpan.textContent = task.taskName;
-    taskNameSpan.style.marginRight = '10px'; // Add margin to the right of the text
-
-    // Add delete button for each todo item
-    var deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Delete';
-    deleteButton.className = 'btn btn-danger delete-btn';
-    deleteButton.dataset.id = task.id;
-    deleteButton.addEventListener('click', function() {
-        deleteTask(task.id);
-    });
-
-    // Append task name and delete button to the todo item
-    listItem.appendChild(taskNameSpan);
-    listItem.appendChild(deleteButton);
-
-    document.getElementById('todoList').appendChild(listItem);
-}
-
-        // Function to fetch todo items from backend
-        function fetchTodoItems() {
-            fetch('/api/todo')
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(todo => addTask(todo)); // Add each fetched todo item to the UI
-                })
-                .catch(error => console.error('Error fetching todo items:', error));
-        }
-
-        // Fetch todo items from backend when the page loads
-        fetchTodoItems();
-
-        // Function to send todo task data to backend
-        function sendTaskToBackend(taskName) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/todo', true); // Adjust the endpoint as per your backend setup
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === XMLHttpRequest.DONE) {
-                    if (xhr.status === 200) {
-                        console.log('Task added successfully');
-                        fetchTodoItems(); // Refresh todo list after adding task
-                    } else {
-                        console.error('Failed to add task:', xhr.status);
-                    }
+            // Function to add a new todo task
+            function addTask(task) {
+                // Check if the task ID is already displayed
+                if (displayedTaskIds.has(task.id)) {
+                    return; // Skip adding this task
                 }
-            };
-            var data = JSON.stringify({ taskName: taskName });
-            xhr.send(data);
-        }
 
-        // Function to delete a todo task by its ID
-// Function to delete a todo task by its ID
-function deleteTask(taskId) {
-    console.log('Deleting task with ID:', taskId);
-    fetch('/api/todo/' + taskId, {
-        method: 'DELETE'
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log('Task deleted successfully');
-            // Remove the deleted task from the UI
-            var taskItem = document.querySelector('.todo-item[data-id="' + taskId + '"]');
-            console.log('Task item:', taskItem);
-            if (taskItem) {
-                taskItem.remove();
-                console.log('Task removed from UI');
-            } else {
-                console.error('Task item not found in UI');
+                var listItem = document.createElement('li');
+                listItem.className = 'list-group-item todo-item';
+
+                // Create span for task name
+                var taskNameSpan = document.createElement('span');
+                taskNameSpan.textContent = task.taskName;
+                taskNameSpan.style.marginRight = '10px'; // Add margin to the right of the text
+
+                // Add delete button for each todo item
+                var deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'btn btn-danger delete-btn';
+                deleteButton.dataset.id = task.id;
+                deleteButton.addEventListener('click', function () {
+                    deleteTask(task.id);
+                });
+
+                // Append task name and delete button to the todo item
+                listItem.appendChild(taskNameSpan);
+                listItem.appendChild(deleteButton);
+
+                document.getElementById('todoList').appendChild(listItem);
+
+                // Add the task ID to the displayed set
+                displayedTaskIds.add(task.id);
             }
-        } else {
-            console.error('Failed to delete task:', response.status);
-        }
-    })
-    .catch(error => console.error('Error deleting task:', error));
-}
 
-
-
-        // Add task when clicking the "Add Task" button
-        document.getElementById('addTaskBtn').addEventListener('click', function() {
-            var newTaskInput = document.getElementById('newTaskInput');
-            var taskName = newTaskInput.value.trim();
-            if (taskName !== '') {
-                sendTaskToBackend(taskName);
-                newTaskInput.value = ''; // Clear input field after adding task
+            // Function to fetch todo items from backend
+            function fetchTodoItems() {
+                fetch('/api/todo')
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(todo => addTask(todo)); // Add each fetched todo item to the UI
+                    })
+                    .catch(error => console.error('Error fetching todo items:', error));
             }
+
+            // Fetch todo items from backend when the page loads
+            fetchTodoItems();
+
+            // Function to send todo task data to backend
+            function sendTaskToBackend(taskName) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/todo', true); // Adjust the endpoint as per your backend setup
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                        if (xhr.status === 200) {
+                            console.log('Task added successfully');
+                            fetchTodoItems(); // Refresh todo list after adding task
+                        } else {
+                            console.error('Failed to add task:', xhr.status);
+                        }
+                    }
+                };
+                var data = JSON.stringify({ taskName: taskName });
+                xhr.send(data);
+            }
+
+            // Function to delete a todo task by its ID
+            function deleteTask(taskId) {
+                console.log('Deleting task with ID:', taskId);
+                fetch('/api/todo/' + taskId, {
+                    method: 'DELETE'
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log('Task deleted successfully');
+                            fetchTodoItems();
+                          location.reload()
+                        } else {
+                            console.error('Failed to delete task:', response.status);
+                                       location.reload()
+                        }
+                    })
+                    .catch(error => console.error('Error deleting task:', error));
+            }
+
+            // Add task when clicking the "Add Task" button
+            document.getElementById('addTaskBtn').addEventListener('click', function () {
+                var newTaskInput = document.getElementById('newTaskInput');
+                var taskName = newTaskInput.value.trim();
+                if (taskName !== '') {
+                    sendTaskToBackend(taskName);
+                    newTaskInput.value = ''; // Clear input field after adding task
+                }
+            });
+
+            // Add task when pressing Enter key in the input field
+            document.getElementById('newTaskInput').addEventListener('keypress', function (event) {
+                if (event.which === 13) { // Enter key
+                    document.getElementById('addTaskBtn').click(); // Trigger click event of Add Task button
+                }
+            });
         });
-
-        // Add task when pressing Enter key in the input field
-        document.getElementById('newTaskInput').addEventListener('keypress', function(event) {
-            if (event.which === 13) { // Enter key
-                document.getElementById('addTaskBtn').click(); // Trigger click event of Add Task button
-            }
-        });
-    });
-</script>
+    </script>
 </body>
+
 </html>
