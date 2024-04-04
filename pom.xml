@@ -61,15 +61,15 @@
 					</excludes>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>3.2.4</version>
-				<configuration>
-					<mainClass>com.pg.todo.Application</mainClass>
-					<!-- Replace com.example.Application with your actual main class -->
-				</configuration>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.springframework.boot</groupId>-->
+<!--				<artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--				<version>3.2.4</version>-->
+<!--				<configuration>-->
+<!--					<mainClass>com.pg.todo.TodoApplication</mainClass>-->
+<!--					&lt;!&ndash; Replace com.example.Application with your actual main class &ndash;&gt;-->
+<!--				</configuration>-->
+<!--			</plugin>-->
 		</plugins>
 	</build>
 
