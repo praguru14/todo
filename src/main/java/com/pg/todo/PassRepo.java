@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface TodoRepository extends JpaRepository<Todo, Long> {
-
-
+public interface PassRepo extends JpaRepository<Password, Long> {
+    @Query("SELECT t.password FROM Password t WHERE t.id =1")
+    String findPasswordByPassword();
 }

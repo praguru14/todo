@@ -19,35 +19,91 @@
             margin-left: 8px;
             /* Adjust as needed */
         }
+
+        .password-input {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <h2 class="mt-4">Todo List</h2>
-        <!-- Todo List -->
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" placeholder="Add new task" id="newTaskInput">
-            <button class="btn btn-primary" type="button" id="addTaskBtn">Add Task</button>
+        <div id="passwordPrompt" style="display: none;">
+            <input type="password" class="form-control password-input" placeholder="Enter password" id="passwordInput">
+            <button class="btn btn-primary" type="button" id="passwordSubmitBtn">Submit</button>
         </div>
-        <ul class="list-group" id="todoList">
-            <!-- Todo items will be added dynamically here -->
-        </ul>
+        <div id="todoListContainer" style="display: none;">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Add new task" id="newTaskInput">
+                <button class="btn btn-primary" type="button" id="addTaskBtn">Add Task</button>
+            </div>
+            <ul class="list-group" id="todoList">
+                <!-- Todo items will be added dynamically here -->
+            </ul>
+        </div>
     </div>
 
     <!-- Inline JavaScript -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Set to keep track of displayed task IDs
-            var displayedTaskIds = new Set();
+            var passwordInput = document.getElementById('passwordInput');
+            var passwordSubmitBtn = document.getElementById('passwordSubmitBtn');
+            var passwordPrompt = document.getElementById('passwordPrompt');
+            var todoListContainer = document.getElementById('todoListContainer');
+
+            passwordSubmitBtn.addEventListener('click', function () {
+                var enteredPassword = passwordInput.value.trim();
+            //    console.log(enteredPassword)
+                fetchPasswordFromAPI(enteredPassword)
+                    .then(response => {
+                        if (response.ok) {
+                            passwordPrompt.style.display = 'none';
+                            todoListContainer.style.display = 'block';
+                            // Store timestamp in local storage
+                            localStorage.setItem('authTimestamp', Date.now());
+                            // Automatically refresh after 5 minutes
+                            setTimeout(function () {
+                                localStorage.removeItem('authTimestamp');
+                                passwordPrompt.style.display = 'block'; // Show password prompt after expiration
+                                todoListContainer.style.display = 'none'; // Hide todo list after expiration
+                            }, 5 * 60 * 1000); // 5 minutes in milliseconds
+                            fetchTodoItems();
+                        } else {
+                            alert('Incorrect password. Please try again.');
+                            passwordInput.value = '';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching password:', error);
+                        alert('Failed to fetch password. Please try again later.');
+                    });
+            });
+
+            // Function to fetch todo items from backend
+            function fetchTodoItems() {
+                fetch('/api/todo')
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(todo => addTask(todo)); // Add each fetched todo item to the UI
+                    })
+                    .catch(error => console.error('Error fetching todo items:', error));
+            }
+
+            // Function to fetch password from API
+            function fetchPasswordFromAPI(password) {
+             //   console.log('Password:', password);
+                return fetch('/api/todo/pass', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+            }
 
             // Function to add a new todo task
             function addTask(task) {
-                // Check if the task ID is already displayed
-                if (displayedTaskIds.has(task.id)) {
-                    return; // Skip adding this task
-                }
-
                 var listItem = document.createElement('li');
                 listItem.className = 'list-group-item todo-item';
 
@@ -68,59 +124,55 @@
                 // Append task name and delete button to the todo item
                 listItem.appendChild(taskNameSpan);
                 listItem.appendChild(deleteButton);
-
                 document.getElementById('todoList').appendChild(listItem);
-
-                // Add the task ID to the displayed set
-                displayedTaskIds.add(task.id);
             }
-
-            // Function to fetch todo items from backend
-            function fetchTodoItems() {
-                fetch('/api/todo')
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(todo => addTask(todo)); // Add each fetched todo item to the UI
-                    })
-                    .catch(error => console.error('Error fetching todo items:', error));
-            }
-
-            // Fetch todo items from backend when the page loads
-            fetchTodoItems();
-
-            // Function to send todo task data to backend
-            function sendTaskToBackend(taskName) {
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/todo', true); // Adjust the endpoint as per your backend setup
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === XMLHttpRequest.DONE) {
-                        if (xhr.status === 200) {
-                            console.log('Task added successfully');
-                            fetchTodoItems(); // Refresh todo list after adding task
+         function sendTaskToBackend(taskName) {
+               // console.log('Task name:', taskName); // Log the task name being sent to the backend
+                fetch('/api/todo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ taskName: taskName })
+                })
+                    .then(response => {
+                        //console.log('Response from server:', response); // Log the response from the server
+                        if (response.ok) {
+                                 location.reload(); 
+                            return response.json(); // Extract JSON body content from response
                         } else {
-                            console.error('Failed to add task:', xhr.status);
+                            console.error('Failed to add task. Server returned:', response.status, response.statusText);
+                            throw new Error('Failed to add task');
                         }
-                    }
-                };
-                var data = JSON.stringify({ taskName: taskName });
-                xhr.send(data);
+                    })
+                    .then(data => {
+                        if (!data) {
+                            console.error('Empty response data received');
+                            throw new Error('Empty response data');
+                        }
+                        addTask(data); // Add the newly created task to the UI
+                        document.getElementById('newTaskInput').value = ''; // Clear input field after adding task
+                    })
+                    .catch(error => console.error('Error adding task:', error));
             }
+
+
 
             // Function to delete a todo task by its ID
             function deleteTask(taskId) {
-                console.log('Deleting task with ID:', taskId);
+               // console.log('Deleting task with ID:', taskId);
                 fetch('/api/todo/' + taskId, {
                     method: 'DELETE'
                 })
                     .then(response => {
                         if (response.ok) {
-                            console.log('Task deleted successfully');
-                            fetchTodoItems();
-                          location.reload()
+                          //  console.log('Task deleted successfully');
+                            location.reload();
+                            // Refresh the todo list after deleting task
+
                         } else {
                             console.error('Failed to delete task:', response.status);
-                                       location.reload()
+                            location.reload();
                         }
                     })
                     .catch(error => console.error('Error deleting task:', error));
@@ -142,8 +194,20 @@
                     document.getElementById('addTaskBtn').click(); // Trigger click event of Add Task button
                 }
             });
+
+            // Check if authentication timestamp is within 5 minutes
+            var authTimestamp = localStorage.getItem('authTimestamp');
+            if (authTimestamp && Date.now() - authTimestamp <= 5 * 60 * 1000) {
+                // If timestamp is within 5 minutes, proceed without prompting for password
+                todoListContainer.style.display = 'block';
+                fetchTodoItems();
+            } else {
+                // If timestamp is expired or not present, prompt for password
+                passwordPrompt.style.display = 'block';
+            }
         });
     </script>
+
 </body>
 
 </html>

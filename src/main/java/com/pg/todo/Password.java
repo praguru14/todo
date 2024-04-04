@@ -7,17 +7,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 
-@Entity // Add @Entity annotation to mark the class as a JPA entity
+@Entity(name = "Password") // Add @Entity annotation to mark the class as a JPA entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Todo {
+public class Password {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Add an id field and annotate it with @Id and @GeneratedValue
-
-    private String taskName;
-
+    private Long id;
+    private String password;
 }

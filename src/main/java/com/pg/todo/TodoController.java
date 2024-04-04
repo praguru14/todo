@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -13,8 +14,10 @@ import java.util.Optional;
 public class TodoController {
 
     @Autowired
-    private TodoRepository todoRepository; // Assuming you have a TodoRepository for database operations
+    private TodoRepository todoRepository;
 
+    @Autowired
+    private PassRepo passRepo;
     @GetMapping
     public ResponseEntity<List<Todo>> getAllTodos() {
         List<Todo> todos = todoRepository.findAll();
@@ -46,6 +49,22 @@ public class TodoController {
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Return error response
+        }
+    }
+
+    @PostMapping("/pass")
+    public ResponseEntity<String> verifyPassword(@RequestBody Map<String,String> password) {
+        String fromDb = passRepo.findPasswordByPassword();
+        String pass = password.get("password");
+        if (pass.equals(fromDb)) {
+            System.out.println(pass);
+            System.out.println(fromDb);
+            return ResponseEntity.ok("Password verified.");
+        } else {
+            System.out.println(password);
+            System.out.println(fromDb);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect password.");
+
         }
     }
 }
