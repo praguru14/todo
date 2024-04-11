@@ -6,28 +6,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/todo")
-public class TodoController {
+@RequestMapping("/api/list")
+public class ListController {
+
+
 
     @Autowired
-    private TodoRepository todoRepository;
+    private ListRepo listRepo;
 
-    @Autowired
-    private PassRepo passRepo;
     @GetMapping
-    public ResponseEntity<List<Todo>> getAllTodos() {
-        List<Todo> todos = todoRepository.findAll();
+    public ResponseEntity<List<ListModel>> getAllTodos() {
+        List<ListModel> todos = listRepo.findAll();
         return ResponseEntity.ok(todos);
     }
 
     @PostMapping
-    public ResponseEntity<?> addTodo(@RequestBody Todo todo) {
+    public ResponseEntity<?> addTodo(@RequestBody ListModel listModel) {
         try {
-            todoRepository.save(todo);
+            listRepo.save(listModel);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -37,9 +36,9 @@ public class TodoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTodoById(@PathVariable Long id) {
         try {
-            Optional<Todo> todoOptional = todoRepository.findById(id);
+            Optional<ListModel> todoOptional = listRepo.findById(id);
             if (todoOptional.isPresent()) {
-                todoRepository.deleteById(id);
+                listRepo.deleteById(id);
                 return ResponseEntity.ok().build(); // Return success response
             } else {
                 return ResponseEntity.notFound().build();    }
@@ -47,17 +46,16 @@ public class TodoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Return error response
         }
     }
-
-    @PostMapping("/pass")
-    public ResponseEntity<String> verifyPassword(@RequestBody Map<String,String> password) {
-        String fromDb = passRepo.findPasswordByPassword();
-        String pass = password.get("password");
-        System.out.println(fromDb + "   "+pass);
-        if (pass.equals(fromDb)) {
-            return ResponseEntity.ok("Password verified.");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect password.");
-
-        }
-    }
+//
+//    @PostMapping("/pass")
+//    public ResponseEntity<String> verifyPassword(@RequestBody Map<String,String> password) {
+//        String fromDb = passRepo.findPasswordByPassword();
+//        String pass = password.get("password");
+//        if (pass.equals(fromDb)) {
+//            return ResponseEntity.ok("Password verified.");
+//        } else {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect password.");
+//
+//        }
+//    }
 }

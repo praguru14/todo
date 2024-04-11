@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List</title>
+    <title>Topics</title>
     <!-- Bootstrap CSS (you can include it inline as well if needed) -->
     <style>
         /* Bootstrap CSS code */
@@ -23,75 +23,33 @@
         .password-input {
             margin-bottom: 10px;
         }
+
+        .completed-task {
+            text-decoration: line-through;
+            color: #888;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h2 class="mt-4">Todo List</h2>
-
-        <!-- Password Prompt -->
-        <div id="passwordPrompt" style="display: block;">
-            <p>Please enter the password to continue:</p>
-            <input type="password" class="password-input" id="passwordInput">
-            <button class="btn btn-primary" id="passwordSubmitBtn">Submit</button>
-        </div>
-
+        <h2 class="mt-4">Topics</h2>
         <!-- Todo List -->
-        <div id="todoListContainer" style="display: none;">
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" placeholder="Add new task" id="newTaskInput">
-                <button class="btn btn-primary" type="button" id="addTaskBtn">Add Task</button>
-            </div>
-            <ul class="list-group" id="todoList">
-                <!-- Todo items will be added dynamically here -->
-            </ul>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" placeholder="Add new topic" id="newTaskInput">
+            <button class="btn btn-primary" type="button" id="addTaskBtn">Add topic</button>
         </div>
-        <div><a href="list.html">Go to List Page</a></div>
+        <ul class="list-group" id="todoList">
+            <!-- Todo items will be added dynamically here -->
+        </ul>
     </div>
+
 
     <!-- Inline JavaScript -->
     <script>
-        var displayedTaskIds = new Set();
         document.addEventListener('DOMContentLoaded', function () {
-            var todoListContainer = document.getElementById('todoListContainer');
-            var passwordPrompt = document.getElementById('passwordPrompt');
-
-            function checkPassword() {
-                var password = document.getElementById('passwordInput').value;
-                console.log(password);
-                fetch('/api/todo/pass', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ password: password })
-                })
-                    .then(response => {
-                        console.log(response);
-                        if (response.ok) {
-                            localStorage.setItem('authTimestamp', Date.now());
-                            // Redirect to list.html
-                            window.location.href = 'list.html';
-                        } else {
-                            alert('Incorrect password. Please try again.');
-                        }
-                    })
-                    .catch(error => console.error('Error verifying password:', error));
-            }
-
-
-            // Check if authentication timestamp is within 5 minutes
-            var authTimestamp = localStorage.getItem('authTimestamp');
-            if (authTimestamp && Date.now() - authTimestamp <= 5 * 60 * 1000) {
-                // If timestamp is within 5 minutes, proceed without prompting for password
-                passwordPrompt.style.display = 'none';
-                todoListContainer.style.display = 'block';
-                fetchTodoItems();
-            }
-
-            // Add event listener to password submit button
-            document.getElementById('passwordSubmitBtn').addEventListener('click', checkPassword);
+            // Set to keep track of displayed task IDs
+            var displayedTaskIds = new Set();
 
             // Function to add a new todo task
             function addTask(task) {
@@ -102,6 +60,7 @@
 
                 var listItem = document.createElement('li');
                 listItem.className = 'list-group-item todo-item';
+                listItem.dataset.taskId = task.id; // Store task ID in dataset attribute
 
                 // Create span for task name
                 var taskNameSpan = document.createElement('span');
@@ -121,6 +80,11 @@
                 listItem.appendChild(taskNameSpan);
                 listItem.appendChild(deleteButton);
 
+                // Add click event listener to toggle completion status
+                listItem.addEventListener('click', function () {
+                    toggleCompletion(listItem);
+                });
+
                 document.getElementById('todoList').appendChild(listItem);
 
                 // Add the task ID to the displayed set
@@ -129,7 +93,7 @@
 
             // Function to fetch todo items from backend
             function fetchTodoItems() {
-                fetch('/api/todo')
+                fetch('/api/list')
                     .then(response => response.json())
                     .then(data => {
                         data.forEach(todo => addTask(todo)); // Add each fetched todo item to the UI
@@ -137,10 +101,13 @@
                     .catch(error => console.error('Error fetching todo items:', error));
             }
 
+            // Fetch todo items from backend when the page loads
+            fetchTodoItems();
+
             // Function to send todo task data to backend
             function sendTaskToBackend(taskName) {
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/todo', true); // Adjust the endpoint as per your backend setup
+                xhr.open('POST', '/api/list', true); // Adjust the endpoint as per your backend setup
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.onreadystatechange = function () {
                     if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -159,19 +126,25 @@
             // Function to delete a todo task by its ID
             function deleteTask(taskId) {
                 console.log('Deleting task with ID:', taskId);
-                fetch('/api/todo/' + taskId, {
+                fetch('/api/list/' + taskId, {
                     method: 'DELETE'
                 })
                     .then(response => {
                         if (response.ok) {
                             console.log('Task deleted successfully');
                             fetchTodoItems();
-                            location.reload();
+                            location.reload()
                         } else {
                             console.error('Failed to delete task:', response.status);
+                            location.reload()
                         }
                     })
                     .catch(error => console.error('Error deleting task:', error));
+            }
+
+            // Function to toggle completion status of a task
+            function toggleCompletion(taskElement) {
+                taskElement.classList.toggle('completed-task');
             }
 
             // Add task when clicking the "Add Task" button
@@ -190,6 +163,7 @@
                     document.getElementById('addTaskBtn').click(); // Trigger click event of Add Task button
                 }
             });
+
         });
     </script>
 
